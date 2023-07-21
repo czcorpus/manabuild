@@ -119,7 +119,8 @@ func main() {
 		fmt.Fprint(
 			os.Stderr,
 			"Manabuild - a tool for building Go programs with Manatee-open dependency\n",
-			fmt.Sprintf("usage: %s [version] [binary name]", filepath.Base(os.Args[0])),
+			fmt.Sprintf("usage: %s [binary name]\n", filepath.Base(os.Args[0])),
+			fmt.Sprintf("       %s [binary name] [version]", filepath.Base(os.Args[0])),
 			"\n")
 		flag.PrintDefaults()
 	}
@@ -151,7 +152,7 @@ func main() {
 
 	} else {
 		color.New(color.FgHiYellow).Printf(
-			"\n \u24D8 No explicit Manatee version specified, using autodetected %s \u24D8\n",
+			"\n \u24D8  No explicit Manatee version specified, using autodetected %s\n",
 			detectedVersion,
 		)
 	}
@@ -233,7 +234,8 @@ func main() {
 		}
 	})
 	seq.RunOperation("building target project", func(ctx *OperationSequence) {
-		err = buildProject(ctx, specifiedVersion, *workingDir, *manateeSrc, *manateeLib, *shouldRunTests, flag.Arg(1))
+		err = buildProject(
+			ctx, specifiedVersion, *workingDir, *manateeSrc, *manateeLib, *shouldRunTests, targetBinaryName)
 		if err != nil {
 			ctx.WithPausedOutput(func() {
 				fmt.Printf("Failed to build: %s", err)
