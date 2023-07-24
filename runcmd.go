@@ -86,7 +86,7 @@ func RunCommand(cmd *exec.Cmd, opts ...RunCommandOption) error {
 	if cmdw.printIfErr {
 		out, err = cmdw.cmd.CombinedOutput()
 		if err != nil {
-			color.White(string(out))
+			color.New(color.FgHiRed).Println(string(out))
 		}
 		return err
 
