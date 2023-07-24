@@ -11,7 +11,7 @@ build:
 	go build -o manabuild ${LDFLAGS}
 
 install:
-	go install -o manabuild ${LDFLAGS}
+	cp ./manabuild /usr/local/bin
 
 clean:
 	rm manabuild
