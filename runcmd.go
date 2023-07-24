@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -86,7 +87,10 @@ func RunCommand(cmd *exec.Cmd, opts ...RunCommandOption) error {
 	if cmdw.printIfErr {
 		out, err = cmdw.cmd.CombinedOutput()
 		if err != nil {
+			fmt.Println()
 			color.New(color.FgHiRed).Println(string(out))
+			color.New(color.FgHiYellow).Println("failed command: ")
+			fmt.Println("\t" + strings.Join(cmdw.cmd.Args, " "))
 		}
 		return err
 
@@ -137,6 +141,7 @@ func (seq *OperationSequence) RunOperation(title string, fn func(sq *OperationSe
 	seq.sp.Start()
 	fn(seq)
 	seq.sp.Stop()
+	fmt.Println("\U00002705 done")
 	fmt.Print("")
 }
 
