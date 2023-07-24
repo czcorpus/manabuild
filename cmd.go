@@ -238,7 +238,7 @@ func main() {
 			ctx, specifiedVersion, *workingDir, *manateeSrc, *manateeLib, *shouldRunTests, targetBinaryName)
 		if err != nil {
 			ctx.WithPausedOutput(func() {
-				fmt.Printf("Failed to build: %s", err)
+				fmt.Printf("\U0001F4A5 Failed to build: %s\n", err)
 			})
 			os.Exit(1)
 		}

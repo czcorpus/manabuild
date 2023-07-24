@@ -165,6 +165,5 @@ func buildProject(
 			fmt.Sprintf(`go build -o %s -ldflags "%s"`, binaryName, ldFlags),
 		)
 	}
-	RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintIfErr())
-	return err
+	return RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintIfErr())
 }
