@@ -41,6 +41,9 @@ func getCommitInfo(workingDir string) (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
 	cmd.Dir = workingDir
 	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("failed to obtain git commit info: %w", err)
+	}
 	return strings.TrimSpace(string(out)), err
 }
 
@@ -48,7 +51,17 @@ func getVersionInfo(workingDir string) (string, error) {
 	cmd := exec.Command("git", "describe", "--tags")
 	cmd.Dir = workingDir
 	out, err := cmd.CombinedOutput()
-	return strings.TrimSpace(string(out)), err
+	strOut := strings.TrimSpace(string(out))
+	if err != nil {
+		if strings.Contains(strOut, "No names found") {
+			err = nil
+			strOut = "v0.0.0"
+
+		} else {
+			err = fmt.Errorf("failed get version info: %w", err)
+		}
+	}
+	return strOut, err
 }
 
 func getCurrentDatetime(loc *time.Location) string {
@@ -112,6 +125,7 @@ func buildProject(
 	test bool,
 	binaryName string,
 ) error {
+
 	ver, err := getVersionInfo(workingDir)
 	if err != nil {
 		return err
@@ -120,6 +134,7 @@ func buildProject(
 	if err != nil {
 		return err
 	}
+
 	dt := getCurrentDatetime(ctx.TimeLocation())
 	ldFlags := fmt.Sprintf(
 		`-w -s -X main.version='%s' -X main.buildDate='%s' -X main.gitCommit='%s'`,

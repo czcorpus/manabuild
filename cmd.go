@@ -65,7 +65,7 @@ func mkHeader() {
 	}
 
 	verInfo := fmt.Sprintf(
-		"|  manabuild v%s, build date: %s, last commit: %s  |", version, buildDate, gitCommit)
+		"|  manabuild %s, build date: %s, last commit: %s  |", version, buildDate, gitCommit)
 	hd := fmt.Sprintf("+%s+", repeatStr("-", len(verInfo)-2))
 	fmt.Println(hd)
 	fmt.Println(verInfo)
@@ -152,7 +152,7 @@ func main() {
 
 	} else {
 		color.New(color.FgHiYellow).Printf(
-			"\n \u24D8  No explicit Manatee version specified, using autodetected %s\n",
+			"\n \u24D8  No explicit Manatee version specified. Found %s\n",
 			detectedVersion,
 		)
 	}
@@ -205,7 +205,7 @@ func main() {
 			} else {
 				ctx.WithPausedOutput(func() {
 					fmt.Printf(
-						"\nFound system-installed Manatee version: %s\n",
+						"\nUsing system-installed %s\n",
 						detectedVersion.Semver(),
 					)
 				})
