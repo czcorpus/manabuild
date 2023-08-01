@@ -94,7 +94,7 @@ func initManateeSources(version Version, manateeSrc string) error {
 		}
 	}
 
-	cmd := exec.Command("./configure", "--with-pcre")
+	cmd := exec.Command("./configure", "--with-pcre", "--disable-pthread")
 	cmd.Env = env.Export()
 	cmd.Dir = manateeSrc
 	err = cmd.Run()
