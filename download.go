@@ -60,9 +60,18 @@ func unpackArchive(path string) error {
 
 func downloadManateeSrc(ver Version) (string, error) {
 	errTpl := "Failed to download and extract manatee-open: %w. Please do this manually and run the script with --manatee-src"
-	outFile := fmt.Sprintf("/tmp/manatee-open-%s.tar.gz", ver.Semver())
-	fmt.Printf("\nLooking for %s ...", path.Base(outFile))
+	outDir := fmt.Sprintf("/tmp/manatee-open-%s", ver.Semver())
 	var err error
+	isDir, err := fs.IsDir(outDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to explore directory %s: %w", outDir, err)
+	}
+	if isDir {
+		fmt.Printf("found existing manatee directory in %s\n", outDir)
+		return outDir, nil
+	}
+	outFile := fmt.Sprintf("/tmp/manatee-open-%s.tar.gz", ver.Semver())
+	fmt.Printf("\nLooking for %s\n", path.Base(outFile))
 	if !fs.PathExists(outFile) {
 		url := fmt.Sprintf(
 			"https://corpora.fi.muni.cz/noske/src/manatee-open/manatee-open-%s.tar.gz",
@@ -85,5 +94,5 @@ func downloadManateeSrc(ver Version) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf(errTpl, err)
 	}
-	return fmt.Sprintf("/tmp/manatee-open-%s", ver.Semver()), nil
+	return outDir, nil
 }
