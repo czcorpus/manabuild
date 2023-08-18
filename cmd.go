@@ -21,6 +21,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -124,17 +125,26 @@ func main() {
 			"\n")
 		flag.PrintDefaults()
 	}
+	conf := new(Conf)
 	workingDir := flag.String("project-path", ".", "A path where a target project is located")
+	err := TryConfig(*workingDir, conf)
+	if err != nil && err != ErrNoConfig {
+		log.Fatal(err)
+	}
 	shouldRunTests := flag.Bool("test", false, "Specify whether to run unit tests")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
 	flag.Parse()
-	if flag.NArg() < 1 || flag.NArg() > 2 {
+	if !conf.IsLoaded() && (flag.NArg() < 1 || flag.NArg() > 2) {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	mkHeader()
+
+	if conf.SrcPath() != "" {
+		color.New(color.FgHiYellow).Printf("\n \u24D8  Using %s\n", conf.SrcPath())
+	}
 
 	var shouldGenerateRunScript bool
 	detectedVersion, err := AutodetectManateeVersion("")
@@ -156,7 +166,9 @@ func main() {
 			detectedVersion,
 		)
 	}
-	targetBinaryName := flag.Arg(0)
+	if flag.Arg(0) != "" {
+		conf.TargetBinaryName = flag.Arg(0)
+	}
 
 	if !collections.SliceContains(KnownVersions, specifiedVersion.Semver()) {
 		fmt.Printf(
@@ -222,7 +234,7 @@ func main() {
 		}
 	})
 
-	clearPreviousBinaries(*workingDir, targetBinaryName)
+	clearPreviousBinaries(*workingDir, conf.TargetBinaryName)
 
 	seq.RunOperation("preparing manatee-open sources", func(ctx *OperationSequence) {
 		err = initManateeSources(specifiedVersion, *manateeSrc)
@@ -235,7 +247,14 @@ func main() {
 	})
 	seq.RunOperation("building target project", func(ctx *OperationSequence) {
 		err = buildProject(
-			ctx, specifiedVersion, *workingDir, *manateeSrc, *manateeLib, *shouldRunTests, targetBinaryName)
+			ctx,
+			specifiedVersion,
+			*workingDir,
+			*manateeSrc,
+			*manateeLib,
+			*shouldRunTests,
+			conf.TargetBinaryName,
+		)
 		if err != nil {
 			ctx.WithPausedOutput(func() {
 				fmt.Printf("\U0001F4A5 Failed to build: %s\n", err)
@@ -250,7 +269,7 @@ func main() {
 			shouldGenerateRunScript,
 			*manateeLib,
 			*workingDir,
-			targetBinaryName,
+			conf.TargetBinaryName,
 		)
 	})
 }
