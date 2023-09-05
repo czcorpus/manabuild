@@ -172,13 +172,17 @@ func buildProject(
 	if test {
 		fmt.Println("Running TESTS:")
 		cmd = exec.Command("bash", "-c", "go test ./...")
-
-	} else {
-		cmd = exec.Command(
-			"bash",
-			"-c",
-			fmt.Sprintf(`go build -o %s -ldflags "%s"`, binaryName, ldFlags),
-		)
+		err := RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintStdout())
+		if err != nil {
+			return err
+		}
 	}
+
+	fmt.Println("Running BUILD:")
+	cmd = exec.Command(
+		"bash",
+		"-c",
+		fmt.Sprintf(`go build -o %s -ldflags "%s"`, binaryName, ldFlags),
+	)
 	return RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintIfErr())
 }
