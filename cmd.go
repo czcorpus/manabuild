@@ -122,6 +122,7 @@ func main() {
 			"Manabuild - a tool for building Go programs with Manatee-open dependency\n",
 			fmt.Sprintf("usage: %s [binary name]\n", filepath.Base(os.Args[0])),
 			fmt.Sprintf("       %s [binary name] [version]", filepath.Base(os.Args[0])),
+			fmt.Sprintf("       %s version", filepath.Base(os.Args[0])),
 			"\n")
 		flag.PrintDefaults()
 	}
@@ -135,9 +136,17 @@ func main() {
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
 	flag.Parse()
+
+	if flag.Arg(0) == "version" {
+		fmt.Printf("cnc-service-watchdog %s\nbuild date: %s\nlast commit: %s\n", version, buildDate, gitCommit)
+		os.Exit(0)
+		return
+	}
+
 	if !conf.IsLoaded() && (flag.NArg() < 1 || flag.NArg() > 2) {
 		flag.Usage()
 		os.Exit(1)
+		return
 	}
 
 	mkHeader()
