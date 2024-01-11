@@ -169,6 +169,19 @@ func buildProject(
 	currEnv.UpdateBy(buildEnv)
 
 	var cmd *exec.Cmd
+
+	fmt.Println("\nRunning GENERATE:")
+	cmd = exec.Command(
+		"bash",
+		"-c",
+		"go generate",
+	)
+	err = RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintIfErr())
+	if err != nil {
+		return err
+	}
+	fmt.Println("\U00002705 done")
+
 	if test {
 		fmt.Println("Running TESTS:")
 		cmd = exec.Command("bash", "-c", "go test ./...")
@@ -178,7 +191,7 @@ func buildProject(
 		}
 	}
 
-	fmt.Println("Running BUILD:")
+	fmt.Println("\nRunning BUILD:")
 	cmd = exec.Command(
 		"bash",
 		"-c",
