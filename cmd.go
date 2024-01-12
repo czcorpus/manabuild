@@ -115,7 +115,6 @@ func generateBootstrapScript(
 }
 
 func main() {
-
 	flag.Usage = func() {
 		fmt.Fprint(
 			os.Stderr,
@@ -198,8 +197,9 @@ func main() {
 		if *manateeSrc == "" {
 			*manateeSrc, err = downloadManateeSrc(specifiedVersion)
 			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
+				ctx.Fail(func() {
+					fmt.Println(err)
+				})
 			}
 
 		} else {
@@ -214,14 +214,15 @@ func main() {
 		if *manateeLib == "" {
 			*manateeLib = findManatee()
 			if *manateeLib == "" {
-				ctx.WithPausedOutput(func() {
+				ctx.Fail(func() {
 					fmt.Println("Manatee not found in system searched paths. Please run the script with --manatee-lib argument")
 				})
-				os.Exit(1)
 			}
 			if !specifiedVersion.Eq(detectedVersion) {
-				showVersionMismatch(detectedVersion, specifiedVersion)
-				os.Exit(1)
+
+				ctx.Fail(func() {
+					showVersionMismatch(detectedVersion, specifiedVersion)
+				})
 
 			} else {
 				ctx.WithPausedOutput(func() {
@@ -248,10 +249,9 @@ func main() {
 	seq.RunOperation("preparing manatee-open sources", func(ctx *OperationSequence) {
 		err = initManateeSources(specifiedVersion, *manateeSrc)
 		if err != nil {
-			ctx.WithPausedOutput(func() {
+			ctx.Fail(func() {
 				fmt.Printf("Failed to init manatee-open sources: %s", err)
 			})
-			os.Exit(1)
 		}
 	})
 	seq.RunOperation("building target project", func(ctx *OperationSequence) {
@@ -265,10 +265,9 @@ func main() {
 			conf.TargetBinaryName,
 		)
 		if err != nil {
-			ctx.WithPausedOutput(func() {
+			ctx.Fail(func() {
 				fmt.Printf("\U0001F4A5 Failed to build: %s\n", err)
 			})
-			os.Exit(1)
 		}
 	})
 
