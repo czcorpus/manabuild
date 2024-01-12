@@ -126,6 +126,15 @@ func (seq *OperationSequence) WithPausedOutput(fn func()) {
 	}
 }
 
+func (seq *OperationSequence) Fail(fn func()) {
+	if seq.sp.Active() {
+		seq.sp.Stop()
+		fmt.Print("")
+	}
+	fn()
+	os.Exit(1) // deferred functions are not run !!!
+}
+
 func (seq *OperationSequence) RunOperation(title string, fn func(sq *OperationSequence)) {
 	if seq.finished {
 		panic("operation sequence already finished")
