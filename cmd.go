@@ -132,6 +132,7 @@ func main() {
 		log.Fatal(err)
 	}
 	shouldRunTests := flag.Bool("test", false, "Specify whether to run unit tests")
+	buildCmdDir := flag.String("cmd-dir", "", "A subdirectory of `cmd` to be used for build.")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
 	flag.Parse()
@@ -263,6 +264,7 @@ func main() {
 			*manateeLib,
 			*shouldRunTests,
 			conf.TargetBinaryName,
+			*buildCmdDir,
 		)
 		if err != nil {
 			ctx.Fail(func() {
