@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -124,6 +125,7 @@ func buildProject(
 	manateeLib string,
 	test bool,
 	binaryName string,
+	cmdDir string,
 ) error {
 
 	ver, err := getVersionInfo(workingDir)
@@ -192,10 +194,14 @@ func buildProject(
 	}
 
 	fmt.Println("\nRunning BUILD:")
+	var cmdDirStr string
+	if cmdDir != "" {
+		cmdDirStr = "./" + filepath.Join(workingDir, "cmd", cmdDir)
+	}
 	cmd = exec.Command(
 		"bash",
 		"-c",
-		fmt.Sprintf(`go build -o %s -ldflags "%s"`, binaryName, ldFlags),
+		fmt.Sprintf(`go build -o %s -ldflags "%s" %s`, binaryName, ldFlags, cmdDirStr),
 	)
 	return RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintIfErr())
 }
