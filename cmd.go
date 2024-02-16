@@ -104,12 +104,12 @@ func generateBootstrapScript(
 			fmt.Print("\nGenerated run script to handle non-standard libmanatee.so location.")
 			fmt.Printf(
 				"\nTo install the application, copy files %s.bin and %s", binaryName, binaryName)
-			fmt.Print("to a system searched path (e.g. /usr/local/bin).")
+			fmt.Print(" to a system searched path (e.g. /usr/local/bin).")
 		})
 
 	} else {
 		fmt.Printf("\nTo install the application, copy file %s", binaryName)
-		fmt.Print("to a system searched path (e.g. /usr/local/bin)")
+		fmt.Print(" to a system searched path (e.g. /usr/local/bin)")
 	}
 	return nil
 }
