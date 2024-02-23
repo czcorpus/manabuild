@@ -47,12 +47,12 @@ var (
 )
 
 func showVersionMismatch(found, expected Version) {
-	fmt.Printf("\nERROR: Found Manatee %s, you require %s.\n", found.Semver(), expected.Semver())
-	fmt.Println("\nA) If you prefer a different installed version of Manatee")
-	fmt.Println("then please specify a path where a respective libmanatee.so")
-	fmt.Printf("can be found (manabuild %s --manatee-lib /path/to/libmanatee.so/dir\n\n", expected.Semver())
-	fmt.Println("B) If you want to use the detected installed version then run")
-	fmt.Printf("this script with proper version (manabuild %s)", found.Semver())
+	fmt.Fprintf(os.Stderr, "\nERROR: Found Manatee %s, you require %s.\n", found.Semver(), expected.Semver())
+	fmt.Fprintln(os.Stderr, "\nA) If you prefer a different installed version of Manatee")
+	fmt.Fprintln(os.Stderr, "then please specify a path where a respective libmanatee.so")
+	fmt.Fprintf(os.Stderr, "can be found (manabuild %s --manatee-lib /path/to/libmanatee.so/dir\n\n", expected.Semver())
+	fmt.Fprintln(os.Stderr, "B) If you want to use the detected installed version then run")
+	fmt.Fprintf(os.Stderr, "this script with proper version (manabuild %s)", found.Semver())
 }
 
 func mkHeader() {
@@ -68,9 +68,9 @@ func mkHeader() {
 	verInfo := fmt.Sprintf(
 		"|  manabuild %s, build date: %s, last commit: %s  |", version, buildDate, gitCommit)
 	hd := fmt.Sprintf("+%s+", repeatStr("-", len(verInfo)-2))
-	fmt.Println(hd)
-	fmt.Println(verInfo)
-	fmt.Println(hd)
+	fmt.Fprintln(os.Stderr, hd)
+	fmt.Fprintln(os.Stderr, verInfo)
+	fmt.Fprintln(os.Stderr, hd)
 }
 
 func clearPreviousBinaries(workingDir, binaryName string) {
@@ -101,15 +101,18 @@ func generateBootstrapScript(
 		fw.WriteString(fmt.Sprintf("`dirname $0`/%s.bin \"${@:1}\"\n", binaryName))
 		fw.Close()
 		ctx.WithPausedOutput(func() {
-			fmt.Print("\nGenerated run script to handle non-standard libmanatee.so location.")
-			fmt.Printf(
-				"\nTo install the application, copy files %s.bin and %s", binaryName, binaryName)
-			fmt.Print(" to a system searched path (e.g. /usr/local/bin).")
+			fmt.Fprint(
+				os.Stderr, "\nGenerated run script to handle non-standard libmanatee.so location.")
+			fmt.Fprintf(
+				os.Stderr,
+				"\nTo install the application, copy files %s.bin and %s", binaryName, binaryName,
+			)
+			fmt.Fprint(os.Stderr, " to a system searched path (e.g. /usr/local/bin).")
 		})
 
 	} else {
-		fmt.Printf("\nTo install the application, copy file %s", binaryName)
-		fmt.Print(" to a system searched path (e.g. /usr/local/bin)")
+		fmt.Fprintf(os.Stderr, "\nTo install the application, copy file %s", binaryName)
+		fmt.Fprint(os.Stderr, " to a system searched path (e.g. /usr/local/bin)")
 	}
 	return nil
 }
@@ -133,12 +136,17 @@ func main() {
 	}
 	shouldRunTests := flag.Bool("test", false, "Specify whether to run unit tests")
 	buildCmdDir := flag.String("cmd-dir", "", "A subdirectory of `cmd` to be used for build.")
+	noBuild := flag.Bool("no-build", false, "Just check and prepare Manatee sources and define CGO variables")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
 	flag.Parse()
 
 	if flag.Arg(0) == "version" {
-		fmt.Printf("cnc-service-watchdog %s\nbuild date: %s\nlast commit: %s\n", version, buildDate, gitCommit)
+		fmt.Fprintf(
+			os.Stderr,
+			"cnc-service-watchdog %s\nbuild date: %s\nlast commit: %s\n",
+			version, buildDate, gitCommit,
+		)
 		os.Exit(0)
 		return
 	}
@@ -152,25 +160,26 @@ func main() {
 	mkHeader()
 
 	if conf.SrcPath() != "" {
-		color.New(color.FgHiYellow).Printf("\n \u24D8  Using %s\n", conf.SrcPath())
+		color.New(color.FgHiYellow).Fprintf(os.Stderr, "\n \u24D8  Using %s\n", conf.SrcPath())
 	}
 
 	var shouldGenerateRunScript bool
 	detectedVersion, err := AutodetectManateeVersion("")
 	if err != nil {
-		fmt.Printf("Failed to find manatee-open or determine its version: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Failed to find manatee-open or determine its version: %s\n", err)
 		os.Exit(1)
 	}
 	specifiedVersion := detectedVersion
 	if flag.Arg(1) != "" {
 		specifiedVersion, err = ParseManateeVersion(flag.Arg(1))
 		if err != nil {
-			fmt.Printf("Failed to parse specified version")
+			fmt.Fprintf(os.Stderr, "Failed to parse specified version")
 			os.Exit(1)
 		}
 
 	} else {
-		color.New(color.FgHiYellow).Printf(
+		color.New(color.FgHiYellow).Fprintf(
+			os.Stderr,
 			"\n \u24D8  No explicit Manatee version specified. Found %s\n",
 			detectedVersion,
 		)
@@ -180,7 +189,8 @@ func main() {
 	}
 
 	if !collections.SliceContains(KnownVersions, specifiedVersion.Semver()) {
-		fmt.Printf(
+		fmt.Fprintf(
+			os.Stderr,
 			"Unsupported version: %s. Please use one of: %s\n",
 			specifiedVersion, strings.Join(KnownVersions, ", "),
 		)
@@ -189,7 +199,7 @@ func main() {
 
 	timeLocation, err := time.LoadLocation("Europe/Prague")
 	if err != nil {
-		fmt.Println("failed to load time location")
+		fmt.Fprintln(os.Stderr, "failed to load time location")
 		os.Exit(1)
 	}
 	seq := NewOperationSequence(timeLocation)
@@ -199,13 +209,14 @@ func main() {
 			*manateeSrc, err = downloadManateeSrc(specifiedVersion)
 			if err != nil {
 				ctx.Fail(func() {
-					fmt.Println(err)
+					fmt.Fprintln(os.Stderr, err)
 				})
 			}
 
 		} else {
 			ctx.WithPausedOutput(func() {
-				fmt.Printf(
+				fmt.Fprintf(
+					os.Stderr,
 					"\nAssuming that provided Manatee src path matches required version %s",
 					specifiedVersion.Semver(),
 				)
@@ -216,7 +227,9 @@ func main() {
 			*manateeLib = findManatee()
 			if *manateeLib == "" {
 				ctx.Fail(func() {
-					fmt.Println("Manatee not found in system searched paths. Please run the script with --manatee-lib argument")
+					fmt.Fprintln(
+						os.Stderr,
+						"Manatee not found in system searched paths. Please run the script with --manatee-lib argument")
 				})
 			}
 			if !specifiedVersion.Eq(detectedVersion) {
@@ -227,7 +240,8 @@ func main() {
 
 			} else {
 				ctx.WithPausedOutput(func() {
-					fmt.Printf(
+					fmt.Fprintf(
+						os.Stderr,
 						"\nUsing system-installed %s\n",
 						detectedVersion.Semver(),
 					)
@@ -236,7 +250,8 @@ func main() {
 
 		} else {
 			ctx.WithPausedOutput(func() {
-				fmt.Printf(
+				fmt.Fprintf(
+					os.Stderr,
 					"\nAssuming that provided %s/libmanatee.so matches required version %s",
 					*manateeLib, specifiedVersion.Semver(),
 				)
@@ -251,11 +266,16 @@ func main() {
 		err = initManateeSources(specifiedVersion, *manateeSrc)
 		if err != nil {
 			ctx.Fail(func() {
-				fmt.Printf("Failed to init manatee-open sources: %s", err)
+				fmt.Fprintf(os.Stderr, "Failed to init manatee-open sources: %s", err)
 			})
 		}
 	})
-	seq.RunOperation("building target project", func(ctx *OperationSequence) {
+
+	msg := "building target project"
+	if *noBuild {
+		msg = "exporting CGO variables"
+	}
+	seq.RunOperation(msg, func(ctx *OperationSequence) {
 		err = buildProject(
 			ctx,
 			specifiedVersion,
@@ -265,21 +285,24 @@ func main() {
 			*shouldRunTests,
 			conf.TargetBinaryName,
 			*buildCmdDir,
+			*noBuild,
 		)
 		if err != nil {
 			ctx.Fail(func() {
-				fmt.Printf("\U0001F4A5 Failed to build: %s\n", err)
+				fmt.Fprintf(os.Stderr, "\U0001F4A5 Failed to build: %s\n", err)
 			})
 		}
 	})
 
-	seq.RunOperation("generating executable", func(ctx *OperationSequence) {
-		generateBootstrapScript(
-			ctx,
-			shouldGenerateRunScript,
-			*manateeLib,
-			*workingDir,
-			conf.TargetBinaryName,
-		)
-	})
+	if !*noBuild {
+		seq.RunOperation("generating executable", func(ctx *OperationSequence) {
+			generateBootstrapScript(
+				ctx,
+				shouldGenerateRunScript,
+				*manateeLib,
+				*workingDir,
+				conf.TargetBinaryName,
+			)
+		})
+	}
 }

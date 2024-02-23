@@ -38,7 +38,7 @@ func (ev EnvironmentVars) Export() []string {
 
 func (ev EnvironmentVars) Print(linePrefix string) {
 	for k, v := range ev {
-		fmt.Printf("%s=%s\n", color.HiGreenString("%s%s", linePrefix, k), v)
+		fmt.Fprintf(os.Stderr, "%s=%s\n", color.HiGreenString("%s%s", linePrefix, k), v)
 	}
 }
 
