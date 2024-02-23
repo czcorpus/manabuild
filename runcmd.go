@@ -87,10 +87,10 @@ func RunCommand(cmd *exec.Cmd, opts ...RunCommandOption) error {
 	if cmdw.printIfErr {
 		out, err = cmdw.cmd.CombinedOutput()
 		if err != nil {
-			fmt.Println()
-			color.New(color.FgHiRed).Println(string(out))
-			color.New(color.FgHiYellow).Println("failed command: ")
-			fmt.Println("\t" + strings.Join(cmdw.cmd.Args, " "))
+			fmt.Fprintln(os.Stderr)
+			color.New(color.FgHiRed).Fprintln(os.Stderr, string(out))
+			color.New(color.FgHiYellow).Fprintln(os.Stderr, "failed command: ")
+			fmt.Fprintln(os.Stderr, "\t"+strings.Join(cmdw.cmd.Args, " "))
 		}
 		return err
 
@@ -117,7 +117,7 @@ func (seq *OperationSequence) WithPausedOutput(fn func()) {
 	defer seq.mtx.Unlock()
 	if seq.sp.Active() {
 		seq.sp.Stop()
-		fmt.Print("")
+		fmt.Fprint(os.Stderr, "")
 		fn()
 		seq.sp.Start()
 
@@ -129,7 +129,7 @@ func (seq *OperationSequence) WithPausedOutput(fn func()) {
 func (seq *OperationSequence) Fail(fn func()) {
 	if seq.sp.Active() {
 		seq.sp.Stop()
-		fmt.Print("")
+		fmt.Fprint(os.Stderr, "")
 	}
 	fn()
 	os.Exit(1) // deferred functions are not run !!!
@@ -140,7 +140,7 @@ func (seq *OperationSequence) RunOperation(title string, fn func(sq *OperationSe
 		panic("operation sequence already finished")
 	}
 	seq.currIdx++
-	color.Cyan("\n=== [%d] %s ===\n", seq.currIdx, title)
+	color.New(color.FgCyan).Fprintf(os.Stderr, "\n=== [%d] %s ===\n", seq.currIdx, title)
 
 	seq.sp = spinner.New(
 		spinner.CharSets[37],
@@ -150,8 +150,8 @@ func (seq *OperationSequence) RunOperation(title string, fn func(sq *OperationSe
 	seq.sp.Start()
 	fn(seq)
 	seq.sp.Stop()
-	fmt.Println("\U00002705 done")
-	fmt.Print("")
+	fmt.Fprintln(os.Stderr, "\U00002705 done")
+	fmt.Fprint(os.Stderr, "")
 }
 
 func (seq *OperationSequence) Finish() {

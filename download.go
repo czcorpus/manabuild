@@ -52,7 +52,7 @@ func unpackArchive(path string) error {
 	err := cmd.Run()
 	if err != nil {
 		os.Remove(path)
-		fmt.Printf("removing archive %s due to an error\n", path)
+		fmt.Fprintf(os.Stderr, "removing archive %s due to an error\n", path)
 		return fmt.Errorf("failed to unpack file %s: %w", path, err)
 	}
 	return nil
@@ -67,11 +67,11 @@ func downloadManateeSrc(ver Version) (string, error) {
 		return "", fmt.Errorf("failed to explore directory %s: %w", outDir, err)
 	}
 	if isDir {
-		fmt.Printf("found existing manatee directory in %s\n", outDir)
+		fmt.Fprintf(os.Stderr, "found existing manatee directory in %s\n", outDir)
 		return outDir, nil
 	}
 	outFile := fmt.Sprintf("/tmp/manatee-open-%s.tar.gz", ver.Semver())
-	fmt.Printf("\nLooking for %s\n", path.Base(outFile))
+	fmt.Fprintf(os.Stderr, "\nLooking for %s\n", path.Base(outFile))
 	if !fs.PathExists(outFile) {
 		url := fmt.Sprintf(
 			"https://corpora.fi.muni.cz/noske/src/manatee-open/manatee-open-%s.tar.gz",

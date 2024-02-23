@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -126,6 +127,7 @@ func buildProject(
 	test bool,
 	binaryName string,
 	cmdDir string,
+	prepareOnly bool,
 ) error {
 
 	ver, err := getVersionInfo(workingDir)
@@ -161,8 +163,16 @@ func buildProject(
 		buildEnv["CGO_CPPFLAGS"] = strings.Join(subdirs, " ")
 		buildEnv["CGO_LDFLAGS"] = fmt.Sprintf(`-lmanatee -L%s`, manateeLib)
 	}
+
+	if prepareOnly {
+		for k, v := range buildEnv {
+			fmt.Fprintf(os.Stdout, "export %s=\"%s\"\n", k, v)
+		}
+		return nil
+	}
+
 	ctx.WithPausedOutput(func() {
-		fmt.Println("\napplied env. variables:")
+		fmt.Fprintln(os.Stderr, "\napplied env. variables:")
 		color.Set(color.FgGreen)
 		buildEnv.Print("\t")
 		color.Unset()
@@ -170,9 +180,14 @@ func buildProject(
 	currEnv := GetEnvironmentVars()
 	currEnv.UpdateBy(buildEnv)
 
+	var cmdDirStr string
+	if cmdDir != "" {
+		cmdDirStr = "./" + filepath.Join(workingDir, "cmd", cmdDir)
+	}
+
 	var cmd *exec.Cmd
 
-	fmt.Println("\nRunning GENERATE:")
+	fmt.Fprintln(os.Stderr, "\nRunning GENERATE:")
 	cmd = exec.Command(
 		"bash",
 		"-c",
@@ -182,10 +197,10 @@ func buildProject(
 	if err != nil {
 		return err
 	}
-	fmt.Println("\U00002705 done")
+	fmt.Fprintln(os.Stderr, "\U00002705 done")
 
 	if test {
-		fmt.Println("Running TESTS:")
+		fmt.Fprintln(os.Stderr, "Running TESTS:")
 		cmd = exec.Command("bash", "-c", "go test ./...")
 		err := RunCommand(cmd, WithDir(workingDir), WithEnv(currEnv), WithPrintStdout())
 		if err != nil {
@@ -193,11 +208,7 @@ func buildProject(
 		}
 	}
 
-	fmt.Println("\nRunning BUILD:")
-	var cmdDirStr string
-	if cmdDir != "" {
-		cmdDirStr = "./" + filepath.Join(workingDir, "cmd", cmdDir)
-	}
+	fmt.Fprintln(os.Stderr, "\nRunning BUILD:")
 	cmd = exec.Command(
 		"bash",
 		"-c",
