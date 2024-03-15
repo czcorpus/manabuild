@@ -91,40 +91,20 @@ func ParseManateeVersion(v string) (Version, error) {
 }
 
 func AutodetectManateeVersion(specPath string) (Version, error) {
-	tpl := `
-		import manatee
-		print manatee.version()
-	`
+
+	libPath := DefaultManateeLibPath
 	if specPath != "" {
-		tpl = fmt.Sprintf(
-			`
-				sys.path.insert(0, %s)
-				import manatee
-				print manatee.version()
-			`,
-			specPath,
-		)
+		libPath = path.Join(specPath, "libmanatee.so")
 	}
-	cmd := exec.Command("python3", "-c", tpl)
+	cmd := exec.Command("strings", libPath)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
-		return ParseManateeVersion(string(out))
-	}
-	if err != nil {
-		libPath := DefaultManateeLibPath
-		if specPath != "" {
-			libPath = path.Join(specPath, "libmanatee.so")
-		}
-		cmd := exec.Command("strings", libPath)
-		out, err = cmd.CombinedOutput()
-		if err == nil {
-			srch := VerSrchPtrn.FindStringSubmatch(string(out))
-			return ParseManateeVersion(srch[1])
+		srch := VerSrchPtrn.FindStringSubmatch(string(out))
+		return ParseManateeVersion(srch[1])
 
-		} else {
-			err = fmt.Errorf("failed to run `strings %s`", libPath)
+	} else {
+		err = fmt.Errorf("failed to run `strings %s`", libPath)
 
-		}
 	}
 	return Version{}, fmt.Errorf("failed to find Manatee version: %w", err)
 }

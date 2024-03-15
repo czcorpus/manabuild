@@ -81,22 +81,21 @@ func initV2_208() Version {
 func initManateeSources(version Version, manateeSrc string) error {
 	isFile, err := fs.IsFile(path.Join(manateeSrc, "config.hh"))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to test for config.hh: %w", err)
 	}
 
 	env := GetEnvironmentVars()
 	if isFile {
-		// TODO probably not needed: env["PYTHON"] = "/usr/bin/python3"
 		cmd := exec.Command("make", "clean")
 		cmd.Dir = manateeSrc
 		cmd.Env = env.Export()
 		err := cmd.Run()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to run `make clean`: %w", err)
 		}
 	}
 
-	cmd := exec.Command("./configure", "--with-pcre", "--disable-pthread")
+	cmd := exec.Command("./configure", "--with-pcre", "--disable-python", "--disable-pthread")
 	cmd.Env = env.Export()
 	cmd.Dir = manateeSrc
 	err = cmd.Run()
