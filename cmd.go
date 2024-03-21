@@ -165,9 +165,13 @@ func main() {
 	}
 
 	var shouldGenerateRunScript bool
-	detectedVersion, err := AutodetectManateeVersion("")
+	detectedVersion, err := AutodetectManateeVersion(*manateeLib, KnownVersions)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to find manatee-open or determine its version: %s\n", err)
+		os.Exit(1)
+
+	} else if detectedVersion.IsZero() {
+		fmt.Fprintf(os.Stderr, "Autodetection has not found any suitable Manatee version. Please select one manually\n")
 		os.Exit(1)
 	}
 	specifiedVersion := detectedVersion
@@ -225,7 +229,7 @@ func main() {
 		}
 
 		if *manateeLib == "" {
-			*manateeLib = findManatee()
+			*manateeLib = findManatee(specifiedVersion)
 			if *manateeLib == "" {
 				ctx.Fail(func() {
 					fmt.Fprintln(

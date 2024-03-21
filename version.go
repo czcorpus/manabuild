@@ -20,12 +20,16 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/czcorpus/cnc-gokit/collections"
 	"github.com/czcorpus/cnc-gokit/fs"
 )
 
@@ -38,6 +42,10 @@ type Version struct {
 	Minor   int
 	Patch   int
 	Variant string
+}
+
+func (v Version) IsZero() bool {
+	return v.Major == 0 && v.Minor == 0 && v.Patch == 0
 }
 
 func (v Version) Semver() string {
@@ -90,31 +98,60 @@ func ParseManateeVersion(v string) (Version, error) {
 	return ans, nil
 }
 
-func AutodetectManateeVersion(specPath string) (Version, error) {
+func AutodetectManateeVersion(specPath string, knownVersions []string) (Version, error) {
 
 	libPath := DefaultManateeLibPath
 	if specPath != "" {
 		libPath = path.Join(specPath, "libmanatee.so")
 	}
-	cmd := exec.Command("strings", libPath)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		srch := VerSrchPtrn.FindStringSubmatch(string(out))
-		return ParseManateeVersion(srch[1])
+	if fs.PathExists(libPath) {
+		cmd := exec.Command("strings", libPath)
+		out, err := cmd.CombinedOutput()
+		if err == nil {
+			srch := VerSrchPtrn.FindStringSubmatch(string(out))
+			return ParseManateeVersion(srch[1])
+
+		} else {
+			return Version{}, fmt.Errorf("failed to run `strings %s`", libPath)
+		}
 
 	} else {
-		err = fmt.Errorf("failed to run `strings %s`", libPath)
-
+		return findLatestManateeInOpt(knownVersions)
 	}
-	return Version{}, fmt.Errorf("failed to find Manatee version: %w", err)
 }
 
-func findManatee() string {
+func findLatestManateeInOpt(knownVersions []string) (Version, error) {
+	entries, err := os.ReadDir("/opt/manatee")
+	if err != nil {
+		return Version{}, fmt.Errorf("no default Manatee found and failed to list manatee versions is /opt/manatee: %w", err)
+	}
+	foundVersions := make([]Version, 0, 10)
+	for _, ent := range entries {
+		if v, err := ParseManateeVersion(ent.Name()); err == nil {
+			if collections.SliceContains(knownVersions, v.Semver()) {
+				foundVersions = append(foundVersions, v)
+			}
+		}
+	}
+	if len(foundVersions) > 0 {
+		sort.SliceStable(foundVersions, func(i, j int) bool {
+			return foundVersions[j].Ge(foundVersions[i])
+		})
+		return foundVersions[len(foundVersions)-1], nil
+	}
+	return Version{}, nil
+}
+
+func findManatee(version Version) string {
 	if fs.PathExists("/usr/lib/libmanatee.so") {
 		return "/usr/lib"
 	}
 	if fs.PathExists("/usr/local/lib/libmanatee.so") {
 		return "/usr/local/lib"
+	}
+	optInstPath := fmt.Sprintf("/opt/manatee/%s/lib", version.Semver())
+	if fs.PathExists(filepath.Join(optInstPath, "libmanatee.so")) {
+		return optInstPath
 	}
 	return ""
 }
