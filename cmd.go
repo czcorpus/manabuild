@@ -261,6 +261,9 @@ func main() {
 					*manateeLib, specifiedVersion.Semver(),
 				)
 			})
+		}
+
+		if !strings.HasPrefix(*manateeLib, "/usr/local/lib") { // TODO maybe we should test more paths known by LD
 			shouldGenerateRunScript = true
 		}
 	})
