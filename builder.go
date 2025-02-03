@@ -78,7 +78,7 @@ func initV2_208() Version {
 	return v2_208
 }
 
-func initManateeSources(version Version, manateeSrc string) error {
+func initManateeSources(version Version, manateeSrc string, withPcre2 bool) error {
 	isFile, err := fs.IsFile(path.Join(manateeSrc, "config.hh"))
 	if err != nil {
 		return fmt.Errorf("failed to test for config.hh: %w", err)
@@ -95,7 +95,11 @@ func initManateeSources(version Version, manateeSrc string) error {
 		}
 	}
 
-	cmd := exec.Command("./configure", "--with-pcre", "--disable-python", "--disable-pthread")
+	pcreParam := "--with-pcre"
+	if withPcre2 {
+		pcreParam = "--with-pcre2"
+	}
+	cmd := exec.Command("./configure", pcreParam, "--disable-python", "--disable-pthread")
 	cmd.Env = env.Export()
 	cmd.Dir = manateeSrc
 	err = cmd.Run()

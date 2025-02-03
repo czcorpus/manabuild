@@ -138,6 +138,7 @@ func main() {
 	shouldRunTests := flag.Bool("test", false, "Specify whether to run unit tests")
 	buildCmdDir := flag.String("cmd-dir", "", "A subdirectory of `cmd` to be used for build.")
 	noBuild := flag.Bool("no-build", false, "Just check and prepare Manatee sources and define CGO variables")
+	withPcre2 := flag.Bool("with-pcre2", false, "Specify whether to use PCRE2 for build")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
 	flag.Parse()
@@ -271,7 +272,7 @@ func main() {
 	clearPreviousBinaries(*workingDir, conf.TargetBinaryName)
 
 	seq.RunOperation("preparing manatee-open sources", func(ctx *OperationSequence) {
-		err = initManateeSources(specifiedVersion, *manateeSrc)
+		err = initManateeSources(specifiedVersion, *manateeSrc, *withPcre2)
 		if err != nil {
 			ctx.Fail(func() {
 				fmt.Fprintf(os.Stderr, "Failed to init manatee-open sources: %s", err)
