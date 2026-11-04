@@ -138,15 +138,21 @@ func main() {
 	shouldRunTests := flag.Bool("test", false, "Specify whether to run unit tests")
 	buildCmdDir := flag.String("cmd-dir", "", "A subdirectory of `cmd` to be used for build.")
 	noBuild := flag.Bool("no-build", false, "Just check and prepare Manatee sources and define CGO variables")
-	withPcre2 := flag.Bool("with-pcre2", false, "Specify whether to use PCRE2 for build")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
+	// PCRE variants (by default, system-installed PCRE1 is used);
+	// the selected variant must match the one libmanatee.so was built with
+	withPcre2 := flag.Bool(
+		"with-pcre2", false,
+		"Configure Manatee with PCRE2 instead of PCRE1. Use only if libmanatee.so is built with PCRE2 "+
+			"(e.g. a Manatee installation serving only Manabuild-built apps). Cannot be combined with -legacy-deps")
 	legacyDeps := flag.Bool(
 		"legacy-deps", false,
-		"Download, build and use PCRE1 (needed e.g. on Ubuntu 26.04+ where it is no longer packaged)")
+		"Download, build and use PCRE1 (8.45) from a separate prefix. Use if libmanatee.so is built with PCRE1 "+
+			"but the system does not provide it (e.g. Ubuntu 26.04+). Cannot be combined with -with-pcre2")
 	legacyDepsPrefix := flag.String(
 		"legacy-deps-prefix", DefaultLegacyDepsPrefix,
-		"Installation prefix for -legacy-deps (PCRE1 goes to [prefix]/pcre1)")
+		"Installation prefix for -legacy-deps; PCRE1 goes to [prefix]/pcre1 (an existing installation is reused)")
 	flag.Parse()
 
 	if flag.Arg(0) == "version" {
