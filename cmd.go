@@ -140,6 +140,12 @@ func main() {
 	noBuild := flag.Bool("no-build", false, "Just check and prepare Manatee sources and define CGO variables")
 	manateeSrc := flag.String("manatee-src", "", "Location of Manatee source files")
 	manateeLib := flag.String("manatee-lib", "", "Location of libmanatee.so")
+	legacyDeps := flag.Bool(
+		"legacy-deps", false,
+		"Download, build and use PCRE1 (needed e.g. on Ubuntu 26.04+ where it is no longer packaged)")
+	legacyDepsPrefix := flag.String(
+		"legacy-deps-prefix", DefaultLegacyDepsPrefix,
+		"Installation prefix for -legacy-deps (PCRE1 goes to [prefix]/pcre1)")
 	flag.Parse()
 
 	if flag.Arg(0) == "version" {
@@ -270,8 +276,21 @@ func main() {
 
 	clearPreviousBinaries(*workingDir, conf.TargetBinaryName)
 
+	var legacyDepsInfo *LegacyDeps
+	if *legacyDeps {
+		seq.RunOperation("preparing legacy PCRE1", func(ctx *OperationSequence) {
+			deps, err := prepareLegacyDeps(*legacyDepsPrefix)
+			if err != nil {
+				ctx.Fail(func() {
+					fmt.Fprintf(os.Stderr, "Failed to prepare legacy dependencies: %s", err)
+				})
+			}
+			legacyDepsInfo = &deps
+		})
+	}
+
 	seq.RunOperation("preparing manatee-open sources", func(ctx *OperationSequence) {
-		err = initManateeSources(specifiedVersion, *manateeSrc)
+		err = initManateeSources(specifiedVersion, *manateeSrc, legacyDepsInfo)
 		if err != nil {
 			ctx.Fail(func() {
 				fmt.Fprintf(os.Stderr, "Failed to init manatee-open sources: %s", err)
@@ -294,6 +313,7 @@ func main() {
 			conf.TargetBinaryName,
 			*buildCmdDir,
 			*noBuild,
+			legacyDepsInfo,
 		)
 		if err != nil {
 			ctx.Fail(func() {

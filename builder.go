@@ -78,7 +78,10 @@ func initV2_208() Version {
 	return v2_208
 }
 
-func initManateeSources(version Version, manateeSrc string) error {
+// initManateeSources configures Manatee sources and builds required
+// internal libraries. If legacyDeps is not nil, the locally built PCRE1
+// (see prepareLegacyDeps) is passed to Manatee's configure.
+func initManateeSources(version Version, manateeSrc string, legacyDeps *LegacyDeps) error {
 	isFile, err := fs.IsFile(path.Join(manateeSrc, "config.hh"))
 	if err != nil {
 		return fmt.Errorf("failed to test for config.hh: %w", err)
@@ -95,10 +98,21 @@ func initManateeSources(version Version, manateeSrc string) error {
 		}
 	}
 
-	cmd := exec.Command("./configure", "--with-pcre", "--disable-python", "--disable-pthread")
-	cmd.Env = env.Export()
-	cmd.Dir = manateeSrc
-	err = cmd.Run()
+	confArgs := []string{"--with-pcre", "--disable-python", "--disable-pthread"}
+	if legacyDeps != nil {
+		legacyDeps.UpdateEnv(env)
+		confArgs = append(confArgs, legacyDeps.ConfigureArgs()...)
+		// bundled generated files may come from an older Automake
+		// than the installed one (e.g. 'aclocal-1.16' is missing)
+		cmd := exec.Command("autoreconf", "--install", "--force")
+		err := RunCommand(cmd, WithDir(manateeSrc), WithEnv(env), WithPrintIfErr())
+		if err != nil {
+			return fmt.Errorf("failed to run `autoreconf`: %w", err)
+		}
+	}
+
+	cmd := exec.Command("./configure", confArgs...)
+	err = RunCommand(cmd, WithDir(manateeSrc), WithEnv(env), WithPrintIfErr())
 	if err != nil {
 		return err
 	}
@@ -127,6 +141,7 @@ func buildProject(
 	binaryName string,
 	cmdDir string,
 	prepareOnly bool,
+	legacyDeps *LegacyDeps,
 ) error {
 
 	ver, err := getVersionInfo(workingDir)
@@ -144,6 +159,9 @@ func buildProject(
 		ver, dt, commit,
 	)
 	subdirs := []string{fmt.Sprintf("-I%s", manateeSrc)}
+	if legacyDeps != nil {
+		subdirs = append(subdirs, "-I"+legacyDeps.PCREIncludeDir())
+	}
 	buildEnv := make(EnvironmentVars)
 	if version.Ge(v2_208) {
 		for _, dir := range []string{"finlib", "fsa3", "hat-trie"} {
